@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
+
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
+  String? _errorMessage;
+String? get errorMessage => _errorMessage;
 
   Map<String, dynamic>? _user;
   bool _isLoading = false;
@@ -27,31 +30,59 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
-    try {
-      _isLoading = true;
-      notifyListeners();
+  required String email,
+  required String password,
+}) async {
+  try {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
-      final userData = await _authService.login(
-        email: email,
-        password: password,
-      );
+    final userData = await _authService.login(
+      email: email,
+      password: password,
+    );
 
-      _user = userData;
-      _isLoggedIn = true;
+    _user = userData;
+    _isLoggedIn = true;
 
-      _isLoading = false;
-      notifyListeners();
+    _isLoading = false;
+    notifyListeners();
 
-      return true;
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
+    return true;
+  } catch (e) {
+    _isLoading = false;
+    _errorMessage = e.toString().replaceAll('Exception: ', '');
+    notifyListeners();
+    return false;
   }
+}
+
+Future<bool> resetPassword({
+  required String email,
+  required String password,
+}) async {
+  try {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await _authService.resetPassword(
+      email: email,
+      password: password,
+    );
+
+    _isLoading = false;
+    notifyListeners();
+
+    return true;
+  } catch (e) {
+    _isLoading = false;
+    _errorMessage = e.toString().replaceAll('Exception: ', '');
+    notifyListeners();
+    return false;
+  }
+}
 
   Future<Map<String, dynamic>?> register({
     required String name,

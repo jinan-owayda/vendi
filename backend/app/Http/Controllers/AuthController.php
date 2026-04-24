@@ -48,4 +48,19 @@ class AuthController extends Controller
             return $this->responseJSON(null, "Logout failed.", 500);
         }
     }
+
+    public function resetPassword(Request $request)
+{
+    try {
+        $user = AuthService::resetPassword($request);
+
+        if ($user) {
+            return $this->responseJSON($user, "Password reset successfully.");
+        }
+
+        return $this->responseJSON(null, "User not found.", 404);
+    } catch (Exception $e) {
+        return $this->responseJSON(null, "Password reset failed.", 500);
+    }
+}
 }

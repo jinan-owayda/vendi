@@ -46,4 +46,23 @@ class AuthService
 
         return $user;
     }
+
+    static function resetPassword(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email',
+        'password' => 'required|string|min:6',
+    ]);
+
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
+        return null;
+    }
+
+    $user->password = Hash::make($request->password);
+    $user->save();
+
+    return $user;
+}
 }

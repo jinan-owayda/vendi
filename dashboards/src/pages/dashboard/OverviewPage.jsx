@@ -20,6 +20,19 @@ function OrderIcon() {
   );
 }
 
+function RatingIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <path
+        d="M11 3.5l2.3 4.7 5.2.75-3.75 3.65.9 5.15L11 15.3l-4.65 2.45.9-5.15L3.5 8.95l5.2-.75L11 3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function RevenueIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -30,10 +43,11 @@ function RevenueIcon() {
 
 function OverviewPage() {
   const [stats, setStats] = useState({
-    total_products: 0,
-    total_orders: 0,
-    total_revenue: 0,
-  });
+  total_products: 0,
+  total_orders: 0,
+  total_revenue: 0,
+  store_rating: 0,
+});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -47,10 +61,11 @@ function OverviewPage() {
         const payload = data?.payload;
 
         setStats({
-          total_products: payload?.total_products ?? 0,
-          total_orders: payload?.total_orders ?? 0,
-          total_revenue: payload?.total_revenue ?? 0,
-        });
+  total_products: payload?.total_products ?? 0,
+  total_orders: payload?.total_orders ?? 0,
+  total_revenue: payload?.total_revenue ?? 0,
+  store_rating: payload?.store_rating ?? 0,
+});
       } catch (err) {
         setError(
           err?.response?.data?.message ||
@@ -97,6 +112,15 @@ function OverviewPage() {
           sub="Total earnings"
           dark
         />
+
+        <StatCard
+  icon={<RatingIcon />}
+  badge="Rating"
+  badgeType="accent"
+  title="Store Rating"
+  value={loading ? "..." : `${stats.store_rating} / 5`}
+  sub="Average store rating"
+/>
       </div>
     </div>
   );
@@ -110,7 +134,7 @@ const styles = {
   },
   cardsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
     gap: 20,
   },
   errorBox: {

@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static final Dio dio = Dio(
     BaseOptions(
-      baseUrl: 'http://10.0.2.2:8000/api/v0.1',
+      baseUrl: 'http://127.0.0.1:8000/api/v0.1',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',

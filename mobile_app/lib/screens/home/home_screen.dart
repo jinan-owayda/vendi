@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../services/home_service.dart';
-import '../store/store_detail_screen.dart';
 import '../cart/cart_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../products/product_detail_screen.dart';
+import '../profile/profile_screen.dart';
+import '../search/search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,26 +15,39 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final HomeService _homeService = HomeService();
+  final TextEditingController searchController = TextEditingController();
 
   bool isLoading = true;
   String selectedCategory = 'All';
+  String query = '';
 
   List<dynamic> products = [];
-  List<dynamic> stores = [];
   List<String> categories = ['All'];
 
   @override
   void initState() {
     super.initState();
     loadHomeData();
+
+    searchController.addListener(() {
+      setState(() {
+        query = searchController.text.trim().toLowerCase();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> loadHomeData() async {
     try {
       final fetchedProducts = await _homeService.getProducts();
-      final fetchedStores = await _homeService.getStores();
 
       final categorySet = <String>{};
+
       for (final product in fetchedProducts) {
         final category = product['category']?.toString().trim();
         if (category != null && category.isNotEmpty) {
@@ -42,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         products = fetchedProducts;
-        stores = fetchedStores;
         categories = ['All', ...categorySet.toList()];
         isLoading = false;
       });
@@ -59,21 +73,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String getImageUrl(String? path) {
-    if (path == null || path.isEmpty) {
-      return '';
-    }
-    return 'http://10.0.2.2:8000/storage/$path';
+    if (path == null || path.isEmpty) return '';
+    return 'http://127.0.0.1:8000/storage/$path';
   }
 
-  List<dynamic> get filteredStores {
-    if (selectedCategory == 'All') return stores;
+  List<dynamic> get filteredProducts {
+    return products.where((product) {
+      final name = product['name']?.toString().toLowerCase() ?? '';
+      final description = product['description']?.toString().toLowerCase() ?? '';
+      final category = product['category']?.toString() ?? '';
+      final storeName =
+          product['store']?['name']?.toString().toLowerCase() ?? '';
 
-    final matchingStoreIds = products
-        .where((product) => product['category'] == selectedCategory)
-        .map((product) => product['store_id'])
-        .toSet();
+      final matchesCategory =
+          selectedCategory == 'All' || category == selectedCategory;
 
-    return stores.where((store) => matchingStoreIds.contains(store['id'])).toList();
+      final matchesQuery = query.isEmpty ||
+          name.contains(query) ||
+          description.contains(query) ||
+          category.toLowerCase().contains(query) ||
+          storeName.contains(query);
+
+      return matchesCategory && matchesQuery;
+    }).toList();
   }
 
   IconData getCategoryIcon(String category) {
@@ -100,10 +122,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          selectedCategory = category;
-        });
-      },
+  if (category == 'All') {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => const SearchScreen(),
+      ),
+    );
+  } else {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => SearchScreen(
+          initialCategory: category,
+        ),
+      ),
+    );
+  }
+},
       child: Padding(
         padding: const EdgeInsets.only(right: 18),
         child: Column(
@@ -113,7 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 66,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isSelected ? const Color(0xFFF6E3E3) : const Color(0xFFF3EEEE),
+                color: isSelected
+                    ? const Color(0xFFF6E3E3)
+                    : const Color(0xFFF3EEEE),
                 border: Border.all(
                   color: isSelected
                       ? const Color(0xFFD48383)
@@ -151,17 +187,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-    Widget buildStoreCard(Map<String, dynamic> store) {
-    final logo = getImageUrl(store['logo']?.toString());
-    final rating = double.tryParse(store['rating']?.toString() ?? '0') ?? 0.0;
+  Widget buildProductCard(Map<String, dynamic> product) {
+    final image = getImageUrl(product['image']?.toString());
+    final name = product['name']?.toString() ?? '';
+    final description = product['description']?.toString() ?? '';
+    final price = product['price']?.toString() ?? '0';
+    final category = product['category']?.toString() ?? '';
+    final storeName = product['store']?['name']?.toString() ?? '';
 
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => StoreDetailScreen(
-              storeId: store['id'],
-            ),
+            builder: (_) => ProductDetailScreen(product: product),
           ),
         );
       },
@@ -179,16 +217,16 @@ class _HomeScreenState extends State<HomeScreen> {
               height: 220,
               width: double.infinity,
               color: const Color(0xFFF1ECEC),
-              child: logo.isEmpty
+              child: image.isEmpty
                   ? const Icon(
-                      Icons.storefront_outlined,
+                      Icons.image_outlined,
                       size: 60,
                       color: Color(0xFFA79E9E),
                     )
                   : Image.network(
-                      logo,
+                      image,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
+                      errorBuilder: (_, __, ___) {
                         return const Icon(
                           Icons.broken_image_outlined,
                           size: 60,
@@ -199,70 +237,127 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          store['name']?.toString() ?? '',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF2B2323),
-                            fontFamily: 'Georgia',
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          store['description']?.toString() ?? '',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF6E5C5C),
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    category.toUpperCase(),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      letterSpacing: 1.2,
+                      color: Color(0xFFA97B7C),
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                  const SizedBox(height: 6),
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF2B2323),
+                      fontFamily: 'Georgia',
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF6F1F1),
-                      borderRadius: BorderRadius.circular(20),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF6E5C5C),
+                      height: 1.4,
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.star,
-                          size: 14,
-                          color: Color(0xFFA25557),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          rating.toStringAsFixed(1),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          storeName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6A5858),
+                            fontSize: 13,
+                            color: Color(0xFF8C7C7C),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      Text(
+                        '\$${double.tryParse(price)?.toStringAsFixed(2) ?? price}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFA25557),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget buildBottomNavBar() {
+    return Container(
+      height: 92,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0xFFE3DADA)),
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          const _NavItem(
+            icon: Icons.home_filled,
+            label: 'HOME',
+            selected: true,
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const SearchScreen()),
+              );
+            },
+            child: const _NavItem(
+              icon: Icons.search,
+              label: 'SEARCH',
+              selected: false,
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CartScreen()),
+              );
+            },
+            child: const _NavItem(
+              icon: Icons.shopping_cart_outlined,
+              label: 'CART',
+              selected: false,
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              );
+            },
+            child: const _NavItem(
+              icon: Icons.person_outline,
+              label: 'ACCOUNT',
+              selected: false,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -278,48 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: background,
-      bottomNavigationBar: Container(
-        height: 92,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: Color(0xFFE3DADA)),
-          ),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            const _NavItem(
-              icon: Icons.home_filled,
-              label: 'HOME',
-              selected: true,
-            ),
-            const _NavItem(
-              icon: Icons.search,
-              label: 'SEARCH',
-              selected: false,
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CartScreen()),
-                );
-              },
-              child: const _NavItem(
-                icon: Icons.shopping_cart_outlined,
-                label: 'CART',
-                selected: false,
-              ),
-            ),
-            const _NavItem(
-              icon: Icons.person_outline,
-              label: 'ACCOUNT',
-              selected: false,
-            ),
-          ],
-        ),
-      ),
+      bottomNavigationBar: buildBottomNavBar(),
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator(color: primary))
@@ -334,8 +388,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Row(
                         children: [
-                          
-                          
                           const Spacer(),
                           GestureDetector(
                             onTap: () {
@@ -380,11 +432,15 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: inputBg,
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const TextField(
-                          decoration: InputDecoration(
+                        child: TextField(
+                          controller: searchController,
+                          decoration: const InputDecoration(
                             border: InputBorder.none,
-                            prefixIcon: Icon(Icons.search, color: Color(0xFF7D6B6B)),
-                            hintText: 'Search for stores or categories...',
+                            prefixIcon: Icon(
+                              Icons.search,
+                              color: Color(0xFF7D6B6B),
+                            ),
+                            hintText: 'Search for products, categories, stores...',
                             hintStyle: TextStyle(
                               color: Color(0xFFA79E9E),
                               fontSize: 16,
@@ -411,35 +467,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 28),
-                      Row(
-                        children: const [
-                          Text(
-                            'Trend Stores',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: textDark,
-                              fontFamily: 'Georgia',
-                            ),
-                          ),
-                          Spacer(),
-                          Text(
-                            'View Lookbook',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                      const Text(
+                        'Products',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: textDark,
+                          fontFamily: 'Georgia',
+                        ),
                       ),
                       const SizedBox(height: 18),
-                      if (filteredStores.isEmpty)
+                      if (filteredProducts.isEmpty)
                         const Padding(
                           padding: EdgeInsets.only(top: 30),
                           child: Center(
                             child: Text(
-                              'No stores found for this category',
+                              'No products found',
                               style: TextStyle(
                                 fontSize: 15,
                                 color: Color(0xFF8B7B7B),
@@ -448,9 +491,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         )
                       else
-                        ...filteredStores.map(
-                          (store) => buildStoreCard(
-                            Map<String, dynamic>.from(store),
+                        ...filteredProducts.map(
+                          (product) => buildProductCard(
+                            Map<String, dynamic>.from(product),
                           ),
                         ),
                     ],

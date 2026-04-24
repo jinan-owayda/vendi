@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'auth_service.dart';
 
 class NotificationsService {
-  static const String baseUrl = 'http://10.0.2.2:8000/api/v0.1/customer';
+  static const String baseUrl = 'http://127.0.0.1:8000/api/v0.1/customer';
 
   final AuthService _authService = AuthService();
 

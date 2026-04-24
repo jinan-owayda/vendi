@@ -66,4 +66,15 @@ class OrderItemController extends Controller
             return $this->responseJSON(null, "Server error while deleting order item.", 500);
         }
     }
+
+    public function getBestSellerProducts()
+{
+    try {
+        $products = OrderItemService::getBestSellerProductsLastWeek();
+
+        return $this->responseJSON($products, "Best seller products retrieved successfully.");
+    } catch (Exception $e) {
+        return $this->responseJSON(null, "Failed to retrieve best seller products.", 500);
+    }
+}
 }

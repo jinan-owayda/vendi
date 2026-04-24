@@ -22,4 +22,15 @@ class HomeService {
 
     return List<dynamic>.from(data['payload']);
   }
+
+  Future<List<dynamic>> getBestSellerProducts() async {
+  final response = await ApiService.dio.get('/customer/best_seller_products');
+  final data = response.data;
+
+  if (data['payload'] == null) {
+    throw Exception('Failed to load best sellers');
+  }
+
+  return List<dynamic>.from(data['payload']);
+}
 }

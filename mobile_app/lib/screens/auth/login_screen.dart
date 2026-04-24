@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
+import 'reset_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,12 +13,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController(
-    text: '',
-  );
-  final TextEditingController passwordController = TextEditingController(
-    text: '',
-  );
+  final TextEditingController emailController = TextEditingController(text: '');
+  final TextEditingController passwordController = TextEditingController(text: '');
 
   bool obscurePassword = true;
 
@@ -54,7 +51,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login failed. Check your credentials.')),
+        SnackBar(
+          content: Text(
+            authProvider.errorMessage ?? 'Invalid email or password',
+          ),
+        ),
       );
     }
   }
@@ -104,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 8),
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
@@ -114,7 +116,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           Icon(Icons.payments_outlined, color: primary, size: 28),
                         ],
                       ),
+
                       const SizedBox(height: 24),
+
                       const Center(
                         child: Text(
                           'Vendi',
@@ -127,7 +131,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 8),
+
                       const Center(
                         child: Text(
                           'CURATED LOCAL COMMERCE',
@@ -138,7 +144,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 42),
+
                       const Text(
                         'EMAIL',
                         style: TextStyle(
@@ -147,7 +155,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: textDark,
                         ),
                       ),
+
                       const SizedBox(height: 10),
+
                       Container(
                         decoration: BoxDecoration(
                           color: inputBg,
@@ -165,11 +175,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 24),
+
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             'PASSWORD',
                             style: TextStyle(
                               fontSize: 14,
@@ -177,16 +189,27 @@ class _LoginScreenState extends State<LoginScreen> {
                               color: textDark,
                             ),
                           ),
-                          Text(
-                            'Forgot password?',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: primary,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const ResetPasswordScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Forgot password?',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: primary,
+                              ),
                             ),
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 10),
+
                       Container(
                         decoration: BoxDecoration(
                           color: inputBg,
@@ -217,7 +240,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 34),
+
                       Container(
                         height: 58,
                         decoration: BoxDecoration(
@@ -269,7 +294,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                         ),
                       ),
+
                       const SizedBox(height: 34),
+
                       Row(
                         children: const [
                           Expanded(child: Divider(color: borderColor)),
@@ -287,7 +314,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           Expanded(child: Divider(color: borderColor)),
                         ],
                       ),
+
                       const SizedBox(height: 28),
+
                       SizedBox(
                         height: 56,
                         child: OutlinedButton(

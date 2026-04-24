@@ -30,4 +30,24 @@ class StoreService {
 
     return Map<String, dynamic>.from(data['payload']);
   }
+
+  Future<Map<String, dynamic>> updateStoreRating({
+  required int storeId,
+  required double rating,
+}) async {
+  final response = await ApiService.dio.post(
+    '/vendor/add_update_store/$storeId',
+    data: {
+      'rating': rating,
+    },
+  );
+
+  final data = response.data;
+
+  if (data['status'] != 'success') {
+    throw Exception('Failed to update rating');
+  }
+
+  return Map<String, dynamic>.from(data['payload']);
+}
 }

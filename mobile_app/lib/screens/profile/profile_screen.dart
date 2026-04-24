@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../home/home_screen.dart';
 import '../cart/cart_screen.dart';
+import '../search/search_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -113,11 +114,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               selected: false,
             ),
           ),
-          const _NavItem(
-            icon: Icons.search,
-            label: 'SEARCH',
-            selected: false,
-          ),
+          GestureDetector(
+  onTap: () {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const SearchScreen()),
+    );
+  },
+  child: const _NavItem(
+    icon: Icons.search,
+    label: 'SEARCH',
+    selected: false,
+  ),
+),
           GestureDetector(
             onTap: () {
               Navigator.of(context).pushReplacement(
@@ -172,12 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                      icon: const Icon(Icons.arrow_back, color: primary),
-                    ),
+                    
                     const Text(
                       'Profile',
                       style: TextStyle(

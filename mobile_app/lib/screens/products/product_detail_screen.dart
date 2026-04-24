@@ -20,13 +20,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool isLoading = false;
 
   String getImageUrl(String? path) {
-    if (path == null || path.isEmpty) {
-      return '';
-    }
-    return 'http://10.0.2.2:8000/storage/$path';
+    if (path == null || path.isEmpty) return '';
+    return 'http://127.0.0.1:8000/storage/$path';
+  }
+
+  int get stock {
+    return int.tryParse(widget.product['stock_quantity']?.toString() ?? '0') ?? 0;
+  }
+
+  double get price {
+    return double.tryParse(widget.product['price']?.toString() ?? '0') ?? 0.0;
   }
 
   Future<void> handleAddToCart() async {
+    if (stock <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This product is out of stock')),
+      );
+      return;
+    }
+
+    if (quantity > stock) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You cannot add more than the available stock')),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -63,9 +83,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final name = widget.product['name']?.toString() ?? '';
     final description = widget.product['description']?.toString() ?? '';
     final category = widget.product['category']?.toString() ?? '';
-    final sku = widget.product['sku']?.toString() ?? '';
-    final price = widget.product['price']?.toString() ?? '0';
-    final stock = widget.product['stock_quantity']?.toString() ?? '0';
 
     const background = Color(0xFFF8F5F5);
     const primary = Color(0xFFA25557);
@@ -84,9 +101,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: SizedBox(
           height: 58,
           child: ElevatedButton(
-            onPressed: isLoading ? null : handleAddToCart,
+            onPressed: isLoading || stock <= 0 ? null : handleAddToCart,
             style: ElevatedButton.styleFrom(
               backgroundColor: primary,
+              disabledBackgroundColor: const Color(0xFFC8B8B8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
@@ -101,7 +119,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   )
                 : Text(
-                    'Add to Cart • \$$price',
+                    stock <= 0
+                        ? 'Out of Stock'
+                        : 'Add to Cart • \$${price.toStringAsFixed(2)}',
                     style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
@@ -117,17 +137,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                    icon: const Icon(Icons.arrow_back, color: primary),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.favorite_border, color: primary),
-                ],
+              IconButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: const Icon(Icons.arrow_back, color: primary),
               ),
               const SizedBox(height: 8),
               Container(
@@ -176,15 +190,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
               const SizedBox(height: 18),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _InfoChip(label: 'Category', value: category),
-                  _InfoChip(label: 'SKU', value: sku),
-                  _InfoChip(label: 'Stock', value: stock),
-                ],
-              ),
+              _InfoChip(label: 'Category', value: category),
               const SizedBox(height: 24),
               Row(
                 children: [
@@ -223,11 +229,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                           ),
                         ),
                         IconButton(
-                          onPressed: () {
-                            setState(() {
-                              quantity++;
-                            });
-                          },
+                          onPressed: quantity < stock
+                              ? () {
+                                  setState(() {
+                                    quantity++;
+                                  });
+                                }
+                              : () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'You cannot add more than the available stock',
+                                      ),
+                                    ),
+                                  );
+                                },
                           icon: const Icon(Icons.add),
                         ),
                       ],
@@ -254,7 +270,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      '\$${(double.tryParse(price) ?? 0) * quantity}',
+                      '\$${(price * quantity).toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
