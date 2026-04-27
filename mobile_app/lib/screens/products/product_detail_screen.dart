@@ -21,7 +21,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   String getImageUrl(String? path) {
     if (path == null || path.isEmpty) return '';
-    return 'http://127.0.0.1:8000/storage/$path';
+    return 'http://10.0.0.2:8000/storage/$path';
   }
 
   int get stock {
